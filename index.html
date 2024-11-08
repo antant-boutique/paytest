@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recharge Canteen Card</title>
+    <script src="https://pay.google.com/gp/p/js/pay.js"></script>
+</head>
+<body>
+
+<h2>Recharge Your Canteen Card</h2>
+<div id="container"></div>
+
+<script>
+    const baseRequest = {
+        apiVersion: 2,
+        apiVersionMinor: 0
+    };
+
+    const allowedPaymentMethods = [{
+        type: 'UPI',
+        parameters: {
+            'upiApp': 'intent'
+        }
+    }];
+
+    const paymentsClient = new google.payments.api.PaymentsClient({ environment: 'TEST' });
+
+    function onGooglePayLoaded() {
+        const button = paymentsClient.createButton({ onClick: onGooglePayButtonClicked });
+        document.getElementById('container').appendChild(button);
+    }
+
+    async function onGooglePayButtonClicked() {
+        const paymentDataRequest = Object.assign({}, baseRequest);
+        paymentDataRequest.allowedPaymentMethods = allowedPaymentMethods;
+        paymentDataRequest.transactionInfo = {
+            totalPriceStatus: 'FINAL',
+            totalPrice: '10.00',  // Replace with the actual amount in INR
+            currencyCode: 'INR'
+        };
+        paymentDataRequest.merchantInfo = {
+            merchantId: 'BCR2DN4TWTN7DVTD',  // Replace with your actual merchant ID
+            merchantName: 'Antant Boutique'
+        };
+
+        try {
+            const paymentData = await paymentsClient.loadPaymentData(paymentDataRequest);
+            processPayment(paymentData);
+        } catch (error) {
+            console.error("Google Pay error: ", error);
+        }
+    }
+
+    function processPayment(paymentData) {
+        fetch('/process_payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(paymentData)
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  alert("Payment successful! Your card has been recharged.");
+              } else {
+                  alert("Payment failed. Please try again.");
+              }
+          });
+    }
+
+    onGooglePayLoaded();
+</script>
+
+</body>
+</html>
+
